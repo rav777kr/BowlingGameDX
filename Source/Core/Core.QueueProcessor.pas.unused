@@ -1,0 +1,86 @@
+unit Core.QueueProcessor;
+
+interface
+
+uses
+    System.SysUtils
+  , System.Classes
+  , System.Rtti
+
+  {Spring}
+  , Spring
+  , Spring.Collections
+
+  {BowlingGame}
+  , Core.BaseInterfaces
+  , Core.Queue
+  ;
+
+
+type
+
+  TQueueProcessor<TKey, TVal> = class(TInterfacedObject, IQueueProcessor<TKey, TVal>)
+  strict private
+    FQueue: IDictionaryQueue<TKey, TVal>;
+  strict protected
+    function ProcessQueueItem( AItem: TVal; ALastItemResult: TValue ): TValue; virtual; abstract;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear;
+    procedure PushToQueue( AKey: TKey; AItem: TVal );
+    procedure ProcessQueue( AKey: TKey );
+  end;
+
+implementation
+
+uses
+    Spring.Services
+
+  ;
+
+{ TQueueProcessor<TKey, TVal> }
+
+constructor TQueueProcessor<TKey, TVal>.Create;
+begin
+  inherited Create;
+  FQueue := ServiceLocator.GetService< IDictionaryQueue<TKey, TVal> >;
+end;
+
+destructor TQueueProcessor<TKey, TVal>.Destroy;
+begin
+
+  inherited;
+end;
+
+procedure TQueueProcessor<TKey, TVal>.Clear;
+begin
+  FQueue.Clear;
+end;
+
+procedure TQueueProcessor<TKey, TVal>.PushToQueue(AKey: TKey; AItem: TVal);
+begin
+  FQueue.PushItemToQueue( AKey, AItem );
+end;
+
+procedure TQueueProcessor<TKey, TVal>.ProcessQueue(AKey: TKey);
+var
+  f: TVal;
+  Q: IQueue<TVal>;
+  RV: TValue;
+begin
+  try
+    if FQueue.QueueItemCount[ AKey ] = 0 then
+      Exit;
+    Q := FQueue.Extract( AKey );
+    RV := TValue.Empty;
+    while Q.Count > 0 do
+    begin
+      f := Q.Extract;
+        RV := ProcessQueueItem( f, RV );
+    end;
+  finally
+  end;
+end;
+
+end.

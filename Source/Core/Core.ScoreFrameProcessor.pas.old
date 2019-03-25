@@ -1,0 +1,44 @@
+unit Core.ScoreFrameProcessor;
+
+interface
+
+uses
+    System.SysUtils
+  , System.Classes
+  , System.Rtti
+
+  {Spring}
+  , Spring
+  , Spring.Collections
+
+  {BowlingGame}
+  , Core.Interfaces
+  , Core.Queue
+  , Core.QueueProcessor
+  ;
+
+
+type
+
+  TScoreFrameQueueProcessor = class(TQueueProcessor<Integer, IScoreFrameLink>, IScoreFrameQueueProcessor)
+  strict protected
+    function ProcessQueueItem( AItem: IScoreFrameLink; ALastItemResult: TValue ): TValue; override;
+  end;
+
+implementation
+
+uses
+    Spring.Services
+  ;
+
+
+{ TScoreFrameQueueProcessor }
+
+function TScoreFrameQueueProcessor.ProcessQueueItem(  AItem: IScoreFrameLink;
+  ALastItemResult: TValue ): TValue;
+begin
+  inherited;
+  Result := AItem.UpdateLink;
+end;
+
+end.

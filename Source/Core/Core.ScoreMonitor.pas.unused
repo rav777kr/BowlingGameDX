@@ -1,0 +1,84 @@
+unit Core.ScoreMonitor;
+
+interface
+
+uses
+    System.SysUtils
+  , System.Classes
+  , System.Rtti
+
+  {Spring}
+  , Spring
+  , Spring.DesignPatterns
+  , Spring.Collections
+  , Generics.Collections
+
+  {BowlingGame}
+  , Core.Interfaces
+  , Core.Observable
+  ;
+
+
+type
+
+  IScoreCardUpdater = interface
+    ['{AD1FFD9F-C9CA-4561-8D6C-D2E58E1E97F5}']
+    procedure Update(const AFrame: TFrameInfo);
+  end;
+
+  IScoreCardMonitor = interface (IObservable<IScoreCardUpdater>)
+    ['{072938F4-F75D-4993-98EA-DF475D294C16}']
+    procedure UpdateView(const AFrame: TFrameInfo);
+  end;
+
+  TFrameViewUpdater = class(TInterfacedObject, IScoreCardUpdater)
+  private
+    //FLock: TCriticalSection;
+  protected
+  public
+    constructor Create; virtual;
+    destructor Destroy; override;
+    procedure Update(const AFrame: TFrameInfo); virtual; abstract;
+  end;
+
+  TScoreCardMonitor = class(TObservable<IScoreCardUpdater>, IScoreCardMonitor)
+  strict private
+    FLastFrame: TFrameInfo;
+  protected
+    procedure DoNotify(const AUpdater: IScoreCardUpdater); override;
+  public
+    procedure UpdateView(const AFrame: TFrameInfo);
+  end;
+
+
+implementation
+
+{ TScoreCardMonitor }
+
+procedure TScoreCardMonitor.DoNotify(const AUpdater: IScoreCardUpdater);
+begin
+  inherited;
+  AUpdater.Update(FLastFrame);
+end;
+
+procedure TScoreCardMonitor.UpdateView(const AFrame: TFrameInfo);
+begin
+  FLastFrame := AFrame;
+  Notify;
+end;
+
+{ TFrameViewUpdater }
+
+constructor TFrameViewUpdater.Create;
+begin
+  inherited Create;
+end;
+
+destructor TFrameViewUpdater.Destroy;
+begin
+
+  inherited;
+end;
+
+
+end.

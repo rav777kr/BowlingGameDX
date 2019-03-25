@@ -1,0 +1,86 @@
+unit Core.ScoreFrameLink;
+
+interface
+
+uses
+    System.SysUtils
+  , System.Classes
+  , System.Rtti
+
+  {Spring}
+  , Spring
+  , Spring.Collections
+
+  {BowlingGame}
+  , Core.Interfaces
+  , Core.Queue
+  , Core.QueueProcessor
+  ;
+
+
+type
+
+  TScoreFrameQueue = class(TDictionaryQueue<Integer, IScoreFrame>)
+  end;
+
+  TScoreFrameQueueProcessor = class(TInterfacedObject, IScoreFrameQueueProcessor)
+  strict private
+    FFrameLinkQueue: IDictionaryQueue<Integer, IScoreFrame>;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear;
+    procedure PushToFrameQueue( ATargetFrameNo: Integer; AFrame: IScoreFrame );
+    procedure ProcessQueue( ARootFrame: IScoreFrame );
+  end;
+
+implementation
+
+uses
+    Spring.Services
+
+  ;
+
+{ TScoreFrameQueueProcessor }
+
+constructor TScoreFrameQueueProcessor.Create;
+begin
+  inherited Create;
+  //FFrameLinkQueue := TScoreFrameQueue.Create;
+  FFrameLinkQueue := ServiceLocator.GetService< IDictionaryQueue<Integer, IScoreFrame> >;
+end;
+
+destructor TScoreFrameQueueProcessor.Destroy;
+begin
+
+  inherited;
+end;
+
+procedure TScoreFrameQueueProcessor.Clear;
+begin
+  FFrameLinkQueue.Clear;
+end;
+
+procedure TScoreFrameQueueProcessor.PushToFrameQueue( ATargetFrameNo: Integer;
+  AFrame: IScoreFrame );
+begin
+  FFrameLinkQueue.PushItemToQueue( ATargetFrameNo, AFrame );
+end;
+
+procedure TScoreFrameQueueProcessor.ProcessQueue( ARootFrame: IScoreFrame );
+var
+  f: IScoreFrame;
+  Q: IQueue<IScoreFrame>;
+begin
+  if FFrameLinkQueue.QueueItemCount[ ARootFrame.FrameNo ] = 0 then
+    Exit;
+  Q := FFrameLinkQueue.Extract( ARootFrame.FrameNo );
+  while Q.Count > 0 do
+  begin
+    f := Q.Extract;
+    f.UpdateFrameTotal( f.FrameTotal + ARootFrame.Rolls[ ARootFrame.Rolls.Count - 1 ].Pins );
+  end;
+end;
+
+
+end.

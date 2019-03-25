@@ -1,0 +1,107 @@
+unit Core.Queue;
+
+interface
+
+uses
+    System.SysUtils
+  , System.Classes
+  , System.Rtti
+
+  {Spring}
+  , Spring
+  , Spring.Collections
+  , Spring.Collections.Queues
+
+  {BowlingGame}
+  , Core.BaseInterfaces
+  ;
+
+
+type
+
+  {dictionary-based queue declaration where each item value is supposed to be a queue}
+  TDictionaryQueue<K, V> = class(TInterfacedObject, IDictionaryQueue<K, V>)
+  strict private
+    FDictionaryQueue: IDictionary<K, IQueue<V>>;
+    procedure Clear;
+    function GetCount: Integer;
+    function GetQueueItemCount(const AKey: K): Integer;
+    procedure PushItemToQueue(const AKey: K; const AValue: V);
+    function PopItemFromQueue(const AKey: K): V;
+    function Extract(const AKey: K): IQueue<V>;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    property Count: Integer read GetCount;
+    property QueueItemCount[const AKey: K]: Integer read GetQueueItemCount;
+  end;
+
+implementation
+
+
+{ TDictionaryQueue<K, V> }
+
+procedure TDictionaryQueue<K, V>.Clear;
+begin
+  FDictionaryQueue.Clear;
+end;
+
+constructor TDictionaryQueue<K, V>.Create;
+begin
+  inherited Create;
+  FDictionaryQueue := TCollections.CreateDictionary< K, IQueue<V> >;
+end;
+
+destructor TDictionaryQueue<K, V>.Destroy;
+begin
+
+  inherited;
+end;
+
+function TDictionaryQueue<K, V>.GetCount: Integer;
+begin
+  Result := FDictionaryQueue.Count;
+end;
+
+function TDictionaryQueue<K, V>.GetQueueItemCount(const AKey: K): Integer;
+begin
+  Result := 0;
+  if FDictionaryQueue.ContainsKey( AKey ) then
+    Result := FDictionaryQueue.Items[AKey].Count;
+end;
+
+function TDictionaryQueue<K, V>.PopItemFromQueue(const AKey: K): V;
+var
+  VQ: IQueue<V>;
+begin
+  Result := Default( V );
+  if FDictionaryQueue.TryGetValue( AKey, VQ ) then
+  begin
+    if (VQ.Count > 0) then
+      VQ.Extract;
+    if (VQ.Count = 0) then
+      FDictionaryQueue.Remove( AKey );
+  end;
+end;
+
+procedure TDictionaryQueue<K, V>.PushItemToQueue( const AKey: K;
+  const AValue: V );
+var
+  VQ: IQueue<V>;
+begin
+  if not FDictionaryQueue.TryGetValue(AKey, VQ) then
+  begin
+    VQ := TCollections.CreateQueue< V >;
+    FDictionaryQueue.Add( AKey, VQ );
+  end;
+  VQ.Enqueue( AValue );
+end;
+
+function TDictionaryQueue<K, V>.Extract(const AKey: K): IQueue<V>;
+begin
+  if FDictionaryQueue.ContainsKey( AKey ) then
+    Result := FDictionaryQueue.Extract( AKey );
+end;
+
+end.

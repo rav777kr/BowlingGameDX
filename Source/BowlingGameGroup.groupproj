@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{527FF558-3D9E-4435-9CF0-14BA310193A6}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="BowlingGame.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="BowlingGame">
+        <MSBuild Projects="BowlingGame.dproj"/>
+    </Target>
+    <Target Name="BowlingGame:Clean">
+        <MSBuild Projects="BowlingGame.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="BowlingGame:Make">
+        <MSBuild Projects="BowlingGame.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="BowlingGame"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="BowlingGame:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="BowlingGame:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

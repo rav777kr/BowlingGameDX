@@ -1,0 +1,189 @@
+﻿REQUIRED FOR SERIALIZER
+Spring.Collections.Lists.pas
+  Added {$RTTI EXPLICIT METHODS([vcPublished, vcPublic, vcProtected])} to TFoldedObjectList definition.
+
+REQUIRED FOR ARRAYDML  
+Spring.Persistence.Core.Base.pas
+  Add Procedure SetArrayOfParams(constParams: IList<IList<TDBParam>>); virtual; to TDriverConnectionAdapter
+  
+  procedure TDriverStatementAdapter<T>.SetArrayOfParams(const params: IList<IList<TDBParam>>);
+  begin
+    raise EInvalidOpException.Create('ArrayDML not supported for Adapter type: ' + Self.ClassName);
+  end;
+  
+Spring.Persistence.Core.Interfaces
+  procedure SetArrayOfParams(const params: IList<IList<TDBParam>>); added to IDBStatement
+  
+   IArrayInsertCommand = interface(IDBCommand)
+    ['{B9C827BB-50A0-48BD-BC74-33DCCB699648}']
+    procedure Execute(const entities: IList<TObject>);
+  end;
+  
+Spring.Persistence.SQL.Commands.Insert
+
+  Move FCommand to Protected in TInsertExecutor
+  Add Virtual Keyword to Execute declaration.
+  
+Spring.Persistence.Adapters.FireDAC
+1) Add SetArrayOfParams Method to TFireDacStatementAdapter
+2) Edit TFireDacStatementAdapter.Execute and include Param Size for Array
+  if (statement.Params.ArraySize = 1) then
+    Statement.ExecSql
+  else
+    Statement.Execute(statement.Params.ArraySize, 0);
+3) Modify TFireDacResultSetAdapter.ExecuteQuery 
+	Add Query Fetch Options for ServerSide Cursor	
+	Change  Call to Query.OpenOrExecute so that if SQL starts with Select we don't throw an exception
+ 	
+	if StartsText('Select', Query.SQL.Text.Trim) then
+      		Query.Open
+    	else
+      		Query.Execute;
+//  TFlo - This method throws an unnecessary exception and should not be used.
+//  When logging exceptions this will fill up a log file quickly.
+//  query.OpenOrExecute;
+
+ 
+OUR BUILD.INI CLASS.
+Build.ini
+  Dont lose this one.
+  
+REQUIRED to FIX issues with TValue.FromVariant
+
+Base\Spring.pas
+
+class function TValueHelper.FromVariant(const value: Variant) : TValue
+begin
+...
+              if (Frac(Extended(Value)) <> 0) then
+                Result := Extended(Value)
+              else
+                Result := {$IFDEF DELPHIXE6_UP}Int64(Value);
+              {$ELSE}StrToInt64(VarToStr(Value));{$ENDIF} // see QC#117696
+...
+end;
+
+*************************************************
+Spring.Persistence.Core.EntityMap.pas
+*************************************************
+
+function TEntityMap.PutEntity(const entity : TObject)
+
+begin
+
+  . . . 
+  
+  {TFlo should not put an entity that has a value of zero as this means the database has no record
+    for this entity}
+  if (id = '') or (id = '0') then
+
+  . . . 
+end;
+
+Fix issue with self references, Comment out the lines below
+Unit: Spring.Persistence.Core.AbstractSession
+
+function TAbstractSession.LoadOneToManyAssociation(const id: TValue;
+  const entity: TObject; const column: ColumnAttribute;
+  entityClass: TClass): IDBResultSet;
+var
+  baseEntityClass,
+  entityToLoadClass: TClass;
+begin
+  baseEntityClass := entity.ClassType;
+  entityToLoadClass := entityClass;
+
+  if not TEntityCache.IsValidEntity(entityToLoadClass) then
+    entityToLoadClass := baseEntityClass;
+
+//  if entityToLoadClass = baseEntityClass then
+//    baseEntityClass := nil;
+
+  Result := GetResultSetById(entityToLoadClass, id, baseEntityClass, column);
+end;
+
+************************************************************
+Spring.Persistence.Core.AbstractSession
+************************************************************
+
+Add to Private Decl of TAbstractSession
+    FInternalRowMappers : IDictionary<TClass,IRowMapper>;
+
+Create Constructor
+    FInternalRowMappers  := TCollections.CreateDictionary<TClass,IRowMapper>;
+
+FInternalRowMappers Logic to MapEntitiesFromResultset and MapEntityFromResulsetRow
+procedure TAbstractSession.MapEntitiesFromResultSet(
+  const resultSet: IDBResultSet; const list: IObjectList;
+  entityClass: TClass);
+var
+  rowMapper: IRowMapper;
+  entity: TObject;
+begin
+  if not fRowMappers.TryGetValue(entityClass, rowMapper) and
+     not fInternalRowMappers.TryGetValue(entityClass, rowMapper) then
+  begin
+    rowMapper := TRowMapperInternal.Create(entityClass, Self);
+    FInternalRowMappers.Add(EntityClass, rowmapper);
+  end;
+
+  while not resultSet.IsEmpty do
+  begin
+    entity := rowMapper.MapRow(resultSet);
+    list.Add(entity);
+    resultSet.Next;
+  end;
+end;
+
+function TAbstractSession.MapEntityFromResultSetRow(
+  const resultSet: IDBResultSet; entityClass: TClass): TObject;
+var
+  rowMapper: IRowMapper;
+begin
+  if not fRowMappers.TryGetValue(entityClass, rowMapper) and
+     not fInternalRowMappers.TryGetValue(entityClass, rowMapper) then
+  begin
+    rowmapper := TRowMapperInternal.Create(entityClass, Self);
+    FInternalRowMappers.Add(EntityClass, rowmapper);
+  end;
+
+  Result := rowMapper.MapRow(resultSet);
+end;
+
+Remove extra call to convert in TRowMapperInternal.SetEntityFromColumns This is already called by entity.SetValue
+REMOVED: value := value.Convert(columnData.Member.MemberType.Handle);
+
+procedure TAbstractSession.TRowMapperInternal.SetEntityFromColumns(
+  const entity: IEntityWrapper; const resultSet: IDBResultSet);
+var
+  columnData: TColumnData;
+  fieldValue: Variant;
+  value: TValue;
+  i: Integer;
+begin
+  entity.SetPrimaryKeyValue(entity.GetPrimaryKeyValue(resultSet));
+  for i := 0 to entity.ColumnsData.Count - 1 do
+  begin
+    columnData := entity.ColumnsData[i];
+    if columnData.IsPrimaryKey then
+      Continue;
+
+    if columnData.IsLazy then
+    begin
+      value := ResolveLazyValue(entity, columnData.Member);
+      entity.SetValue(columnData.Member, value);
+    end
+    else
+    begin
+      try
+        fieldValue := resultSet.GetFieldValue(columnData.ColumnName);
+      except
+        raise EORMColumnNotFound.CreateResFmt(@SColumnNotFound, [columnData.ColumnName]);
+      end;
+      value := TValue.FromVariant(fieldValue);
+      entity.SetValue(columnData.Member, value);
+    end;
+  end;
+end;
+
+	
