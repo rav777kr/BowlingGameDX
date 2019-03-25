@@ -1,7 +1,5 @@
 program BowlingGame;
 
-{$DEFINE GAMELOGGER}
-
 uses
   Forms,
   SysUtils,

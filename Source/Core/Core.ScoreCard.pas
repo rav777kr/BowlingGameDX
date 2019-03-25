@@ -212,63 +212,75 @@ procedure TScoreCard.CalculateSequences;
 var
   lastFrame: IScoreFrame;
 begin
-  // frame is within our maximum frame count range
-  if ( FCardData.FrameSequence <= FGameConfig.MaxFrameCount ) then
-  begin
-    Inc( FCardData.BallSequence );
-    lastFrame := GetFrame( FCardData.FrameSequence );
+  if FFrames.Count = 0 then
+    raise EGameException.CreateRes(@SGameNotStarted);
+  if FCardData.IsGameOver then
+    raise EGameException.Create(SGameOver);
+  try
+    // frame is within our maximum frame count range
+    if ( FCardData.FrameSequence <= FGameConfig.MaxFrameCount ) then
+    begin
+      Inc( FCardData.BallSequence );
+      lastFrame := GetFrame( FCardData.FrameSequence );
 
-    //calculate expected roll count per last roll
-    if ( lastFrame.Status = fsNormal ) then
-    begin
-      FCardData.ExpectedRollCount := FGameConfig.NonLastFrameMaxRollCount;
-      if ( FCardData.FrameSequence = FGameConfig.MaxFrameCount ) then
-        FCardData.ExpectedRollCount := FGameConfig.LastFrameMaxRollCount;
-    end
-    else
-    begin
-      if ( FCardData.FrameSequence = FGameConfig.MaxFrameCount ) then
-        FCardData.ExpectedRollCount := FGameConfig.LastFrameMaxRollCount
-      else
-        FCardData.ExpectedRollCount := FGameConfig.NonLastFrameMaxRollCount;
-    end;
-
-    //strike or spare roll case
-    if ( lastFrame.Status <> fsNormal ) then
-    begin
-      //up to 9th frame
-      if ( FCardData.FrameSequence < FGameConfig.MaxFrameCount ) then
+      //calculate expected roll count per last roll
+      if ( lastFrame.Status = fsNormal ) then
       begin
-        Inc( FCardData.FrameSequence );
-        FCardData.RollSequence := 1;
-        Exit;
+        FCardData.ExpectedRollCount := FGameConfig.NonLastFrameMaxRollCount;
+        if ( FCardData.FrameSequence = FGameConfig.MaxFrameCount ) then
+          FCardData.ExpectedRollCount := FGameConfig.LastFrameMaxRollCount;
       end
       else
-      //last frame
       begin
-        if ( lastFrame.Rolls.Count < FCardData.ExpectedRollCount ) then
-          Inc( FCardData.RollSequence )
+        if ( FCardData.FrameSequence = FGameConfig.MaxFrameCount ) then
+          FCardData.ExpectedRollCount := FGameConfig.LastFrameMaxRollCount
         else
-          FCardData.IsGameOver := True;
+          FCardData.ExpectedRollCount := FGameConfig.NonLastFrameMaxRollCount;
       end;
-    end
-    else
-    //normal roll case
-    begin
-      //up to 9th frame
-      FCardData.RollSequence := FCardData.ExpectedRollCount - lastFrame.Rolls.Count;
-      if ( FCardData.RollSequence = 0 ) then
+
+      //strike or spare roll case
+      if ( lastFrame.Status <> fsNormal ) then
       begin
-        FCardData.RollSequence := 1;
+        //up to 9th frame
         if ( FCardData.FrameSequence < FGameConfig.MaxFrameCount ) then
-          Inc( FCardData.FrameSequence )
-        else
         begin
-          FCardData.RollSequence := 0;
-          FCardData.IsGameOver := True;
+          Inc( FCardData.FrameSequence );
+          FCardData.RollSequence := 1;
+          Exit;
+        end
+        else
+        //last frame
+        begin
+          if ( lastFrame.Rolls.Count < FCardData.ExpectedRollCount ) then
+            Inc( FCardData.RollSequence )
+          else
+            FCardData.IsGameOver := True;
+        end;
+      end
+      else
+      //normal roll case
+      begin
+        //up to 9th frame
+        FCardData.RollSequence := FCardData.ExpectedRollCount - lastFrame.Rolls.Count;
+        if ( FCardData.RollSequence = 0 ) then
+        begin
+          FCardData.RollSequence := 1;
+          if ( FCardData.FrameSequence < FGameConfig.MaxFrameCount ) then
+            Inc( FCardData.FrameSequence )
+          else
+          begin
+            FCardData.RollSequence := 0;
+            FCardData.IsGameOver := True;
+          end;
         end;
       end;
     end;
+  finally
+    if ( lastFrame.FrameNo = FGameConfig.MaxFrameCount )
+      and ( lastFrame.RollTotal > ( FCardData.ExpectedRollCount * FGameConfig.MaxPinCountPerRoll ) ) then
+        raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll])
+    else if ( lastFrame.FrameNo < FGameConfig.MaxFrameCount ) and ( lastFrame.RollTotal > FGameConfig.MaxPinCountPerRoll ) then
+        raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
   end;
 end;
 
@@ -281,22 +293,26 @@ procedure TScoreCard.BeforeRollBall;
 begin
   if FFrames.Count = 0 then
     raise EGameException.CreateRes(@SGameNotStarted);
- if FCardData.RollPinCount > FGameConfig.MaxPinCountPerRoll then
-   raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
+ {if FCardData.RollPinCount > FGameConfig.MaxPinCountPerRoll then
+   raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);}
   if FCardData.IsGameOver then
     raise EGameException.Create(SGameOver);
 end;
 
 procedure TScoreCard.ProcessFrameQueue;
 var
-  nextFrameSeq: Integer;
+  total: Integer;
   f: IScoreFrame;
 begin
   f := GetFrame( FCardData.FrameSequence );
   if FScoreFrameProcessor.CountAtKey[ FCardData.BallSequence ] > 0 then
   begin
     FScoreFrameProcessor.ProcessData( FCardData.BallSequence, FCardData.RollPinCount );
-    f.UpdateFrameTotal( f.GetPrevFrameInfo.FrameTotal + FCardData.RollPinCount );
+    if ( FCardData.FrameSequence >= FGameConfig.MaxFrameCount ) then
+      total := f.GetPrevFrameInfo.FrameTotal + f.RollTotal + FCardData.RollPinCount
+    else
+      total := f.GetPrevFrameInfo.FrameTotal + f.RollTotal;
+    f.UpdateFrameTotal( total );
   end;
 
   if ( FCardData.FrameSequence < 10 ) then
@@ -346,3 +362,4 @@ end;
 
 
 end.
+

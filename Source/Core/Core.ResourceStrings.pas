@@ -8,7 +8,7 @@ resourcestring
 
   SGameOver = 'The current game is over. Please start a new game.';
   SGameNotStarted = 'The game has not started. Please start a new game.';
-  SInvalidPins = 'Invalid Pins. The maximum allowed pins per roll is %d';
+  SInvalidPins = 'Invalid Pins. The maximum allowed pins per frame is %d';
   SGameObjectWithValueNotFound = 'Game object %s with value %s not found';
 
   {$ENDREGION}

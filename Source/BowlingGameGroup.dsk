@@ -1,11 +1,11 @@
 ﻿[Closed Files]
-File_0=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\default.txaPackage',0
-File_1=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\Core\ScoreCard\default.txaPackage',0
-File_2=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\Core\BowlingGame\default.txaPackage',0
-File_3=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\frmGameScoreBoard\default.txaPackage',0
-File_4=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\fMain\default.txaPackage',0
-File_5=TSourceModule,'E:\BowlingGame\Source\Client\fMain.pas',0,1,1,1,1,0,0,,
-File_6=TSourceModule,'E:\BowlingGame\Source\Core\Core.ScoreCard.pas',0,1,292,3,298,0,0,,
+File_0=TSourceModule,'E:\BowlingGame\Source\External\Spring4D\Source\Base\Collections\Spring.Collections.Lists.pas',0,1,382,1,401,0,0,{{71,2},{80,13},{'Property Accessors'}}{{125,2},{128,13},{'Property Accessors'}}{{160,2},{163,13},{'Property Accessors'}}{{196,2},{203,13},{'Property Accessors'}}{{230,2},{232,13},{'Property Accessors'}}{{867,0},{905,11},{'TList<T>.TEnumerator'}}{{908,0},{950,11},{'TObjectList<T>'}}{{953,0},{1039,11},{'TSortedList<T>'}}{{1042,0},{1084,11},{'TSortedObjectList<T>'}}{{1087,0},{1285,11},{'TCollectionList<T>'}}{{1288,0},{1326,11},{'TCollectionList<T>.TEnumerator'}}{{1329,0},{1396,11},{'TAnonymousReadOnlyList<T>'}}{{1399,0},{1413,11},{'TFoldedObjectList<T>'}}{{1416,0},{1430,11},{'TFoldedInterfaceList<T>'}}{{1433,0},{1447,11},{'TFoldedSortedObjectList<T>'}}{{1450,0},{1464,11},{'TFoldedSortedInterfaceList<T>'}}{{1467,0},{1488,11},{'TFoldedObjectList'}}{{1491,0},{1512,11},{'TFoldedInterfaceList'}}{{1515,0},{1562,11},{'TObservableList<T>'}}{{1565,0},{1581,11},{'TKeyList<TKey>'}},
+File_1=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\default.txaPackage',0
+File_2=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\Core\ScoreCard\default.txaPackage',0
+File_3=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\Core\BowlingGame\default.txaPackage',0
+File_4=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\frmGameScoreBoard\default.txaPackage',0
+File_5=TTogetherDocModule,'E:\BowlingGame\Source\ModelSupport_BowlingGame\fMain\default.txaPackage',0
+File_6=TSourceModule,'E:\BowlingGame\Source\Client\fMain.pas',0,1,1,1,1,0,0,,
 File_7=TSourceModule,'E:\BowlingGame\Source\Core\Core.ScoreFrameProcessor.pas',0,1,17,67,20,0,0,,
 File_8=TSourceModule,'E:\BowlingGame\Source\Core\Core.Registration.pas',0,1,1,28,16,0,0,,
 File_9=TSourceModule,'E:\BowlingGame\Source\Core\Core.ScoreFrame.pas',0,1,22,1,28,0,0,,
@@ -16,17 +16,27 @@ File_13=TSourceModule,'E:\BowlingGame\Source\Core\Core.Interfaces.pas',0,1,22,35
 File_14=TSourceModule,'E:\BowlingGame\Source\Client\frmGameScoreBoard.pas',0,1,82,13,97,0,0,,
 
 [Modules]
-Module0=default.htm
-Count=1
+Module0=E:\BowlingGame\Source\Core\Core.ScoreCard.pas
+Module1=E:\BowlingGame\Source\Core\Core.ResourceStrings.pas
+Module2=default.htm
+Count=3
 EditWindowCount=1
+
+[E:\BowlingGame\Source\Core\Core.ScoreCard.pas]
+ModuleType=TSourceModule
+
+[E:\BowlingGame\Source\Core\Core.ResourceStrings.pas]
+ModuleType=TSourceModule
 
 [default.htm]
 ModuleType=TURLModule
 
 [EditWindow0]
-ViewCount=1
-CurrentView=0
+ViewCount=3
+CurrentEditView=E:\BowlingGame\Source\Core\Core.ScoreCard.pas
 View0=0
+View1=1
+View2=2
 PercentageSizes=1
 Create=1
 Visible=1
@@ -59,6 +69,28 @@ TabDockRightClients=DockSite4=0,DockSite2=1
 [View0]
 CustomEditViewType=TWelcomePageView
 WelcomePageURL=bds:/default.htm
+
+[View1]
+CustomEditViewType=TEditView
+Module=E:\BowlingGame\Source\Core\Core.ScoreCard.pas
+CursorX=3
+CursorY=360
+TopLine=358
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\BowlingGame\Source\Core\Core.ScoreCard.pas
+
+[View2]
+CustomEditViewType=TEditView
+Module=E:\BowlingGame\Source\Core\Core.ResourceStrings.pas
+CursorX=3
+CursorY=11
+TopLine=1
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\BowlingGame\Source\Core\Core.ResourceStrings.pas
 
 [UndockedDesigner]
 Count=0
@@ -140,11 +172,11 @@ State=0
 Left=0
 Top=0
 Width=2000
-Height=7087
+Height=7154
 MaxLeft=-1
 MaxTop=-1
 ClientWidth=2000
-ClientHeight=7087
+ClientHeight=7154
 TBDockHeight=5904
 LRDockWidth=2349
 Dockable=1
@@ -745,14 +777,14 @@ Create=1
 Visible=0
 Docked=1
 State=0
-Left=4
-Top=24
+Left=1511
+Top=107
 Width=2000
-Height=7327
+Height=7394
 MaxLeft=-1
 MaxTop=-1
 ClientWidth=2000
-ClientHeight=7327
+ClientHeight=7394
 TBDockHeight=7394
 LRDockWidth=2000
 Dockable=1
