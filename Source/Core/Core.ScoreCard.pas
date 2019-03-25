@@ -44,12 +44,12 @@ type
     procedure AttachAllObserversToFrames( const AForceNotify: Boolean );
     procedure AttachObserverToFrames(Observer: IGameObserver; const AForceNotify: Boolean);
     procedure DetachObserverFromFrames(Observer: IGameObserver);
+    procedure CreateFrames(const ACount: Integer);
+    function GetFrame( const ASequenceNo: Integer ): IScoreFrame;
     procedure CalculateSequences;
     procedure ProcessFrameQueue;
     procedure BeforeRollBall;
     procedure AfterRollBall;
-    procedure CreateFrames(const ACount: Integer);
-    function GetFrame( const ASequenceNo: Integer ): IScoreFrame;
   private
     function GetPlayerName: String;
     procedure SetPlayerName(const AValue: String);
@@ -195,17 +195,27 @@ begin
   FPlayerName := APlayerName;
   FFrames.Clear;
 
+  FCardData.IsGameOver := False;
+  FCardData.RollPinCount := 0;
   FCardData.FrameSequence := 1;
   FCardData.ExpectedRollCount := 2;
   FCardData.RollSequence := 1;
   FCardData.BallSequence := 1;
-  FCardData.RollPinCount := 0;
-  FCardData.IsGameOver := False;
+
+  FCardData.FrameSequence := 0;
+  FCardData.ExpectedRollCount := 2;
+  FCardData.RollSequence := 0;
+  FCardData.BallSequence := 0;
 
   FScoreFrameProcessor.Clear;
 
   CreateFrames(FGameConfig.MaxFrameCount);
   AttachAllObserversToFrames( True );
+end;
+
+function TScoreCard.GetFrame( const ASequenceNo: Integer ): IScoreFrame;
+begin
+  Result := FFrames[ ASequenceNo - 1 ];
 end;
 
 procedure TScoreCard.CalculateSequences;
@@ -214,8 +224,13 @@ var
 begin
   if FFrames.Count = 0 then
     raise EGameException.CreateRes(@SGameNotStarted);
-  if FCardData.IsGameOver then
-    raise EGameException.Create(SGameOver);
+  if ( FCardData.FrameSequence = 0 ) then
+  begin
+    Inc( FCardData.FrameSequence, 1 );
+    Inc( FCardData.RollSequence, 1 );
+    Inc( FCardData.BallSequence, 1 );
+    Exit;
+  end;
   try
     // frame is within our maximum frame count range
     if ( FCardData.FrameSequence <= FGameConfig.MaxFrameCount ) then
@@ -281,22 +296,9 @@ begin
         raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll])
     else if ( lastFrame.FrameNo < FGameConfig.MaxFrameCount ) and ( lastFrame.RollTotal > FGameConfig.MaxPinCountPerRoll ) then
         raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
+    if FCardData.IsGameOver then
+      raise EGameException.Create(SGameOver);
   end;
-end;
-
-function TScoreCard.GetFrame( const ASequenceNo: Integer ): IScoreFrame;
-begin
-  Result := FFrames[ ASequenceNo - 1 ];
-end;
-
-procedure TScoreCard.BeforeRollBall;
-begin
-  if FFrames.Count = 0 then
-    raise EGameException.CreateRes(@SGameNotStarted);
- {if FCardData.RollPinCount > FGameConfig.MaxPinCountPerRoll then
-   raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);}
-  if FCardData.IsGameOver then
-    raise EGameException.Create(SGameOver);
 end;
 
 procedure TScoreCard.ProcessFrameQueue;
@@ -304,14 +306,13 @@ var
   total: Integer;
   f: IScoreFrame;
 begin
+  if ( FCardData.FrameSequence = 0 ) then
+    Exit;
   f := GetFrame( FCardData.FrameSequence );
   if FScoreFrameProcessor.CountAtKey[ FCardData.BallSequence ] > 0 then
   begin
     FScoreFrameProcessor.ProcessData( FCardData.BallSequence, FCardData.RollPinCount );
-    if ( FCardData.FrameSequence >= FGameConfig.MaxFrameCount ) then
-      total := f.GetPrevFrameInfo.FrameTotal + f.RollTotal + FCardData.RollPinCount
-    else
-      total := f.GetPrevFrameInfo.FrameTotal + f.RollTotal;
+    total := f.GetPrevFrameInfo.FrameTotal + f.RollTotal;
     f.UpdateFrameTotal( total );
   end;
 
@@ -322,7 +323,6 @@ begin
     begin
       //for strike, put current frame in the queue to be linked to the next frame for score updates
       FScoreFrameProcessor.AddItemAtKey( FCardData.BallSequence + 1, f );
-
       //for strike, put current frame AGAIN in the queue to be linked to the next frame for score updates
       if ( f.FrameInfo.Status = fsStrike ) then
         FScoreFrameProcessor.AddItemAtKey( FCardData.BallSequence + 2, f );
@@ -330,10 +330,15 @@ begin
   end;
 end;
 
+procedure TScoreCard.BeforeRollBall;
+begin
+  CalculateSequences;
+end;
+
 procedure TScoreCard.AfterRollBall;
 begin
   ProcessFrameQueue;
-  CalculateSequences;
+  //CalculateSequences;
 end;
 
 procedure TScoreCard.RollBall(const APinCount: Integer);
@@ -347,7 +352,6 @@ begin
   try
     BeforeRollBall;
 
-    //f := CreateLinkedFrame( FCardData.FrameSequence );
     f := GetFrame( FCardData.FrameSequence );
     factory := ServiceLocator.GetService< IBallFactory >;
     ball := factory.CreateBall( f );
