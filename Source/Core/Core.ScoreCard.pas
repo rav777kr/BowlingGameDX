@@ -291,11 +291,6 @@ begin
       end;
     end;
   finally
-    if ( lastFrame.FrameNo = FGameConfig.MaxFrameCount )
-      and ( lastFrame.RollTotal > ( FCardData.ExpectedRollCount * FGameConfig.MaxPinCountPerRoll ) ) then
-        raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll])
-    else if ( lastFrame.FrameNo < FGameConfig.MaxFrameCount ) and ( lastFrame.RollTotal > FGameConfig.MaxPinCountPerRoll ) then
-        raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
     if FCardData.IsGameOver then
       raise EGameException.Create(SGameOver);
   end;
@@ -338,7 +333,6 @@ end;
 procedure TScoreCard.AfterRollBall;
 begin
   ProcessFrameQueue;
-  //CalculateSequences;
 end;
 
 procedure TScoreCard.RollBall(const APinCount: Integer);

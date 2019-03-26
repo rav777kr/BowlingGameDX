@@ -38,6 +38,7 @@ type
     FPrevFrame: IScoreFrame;
 
     procedure ScoreFrameChanged;
+    procedure Validate( const ARollInfo: TRollInfo );
   strict protected
     function GetFrameNo: Integer; virtual;
     function GetStatus: TFrameStatus; virtual;
@@ -65,6 +66,7 @@ type
 implementation
 uses
     Spring.Services
+  , Core.ResourceStrings
   ;
 
 { TScoreFrameFactory }
@@ -145,10 +147,47 @@ begin
   UpdateView( TValue.From( FFrameInfo) );
 end;
 
+procedure TScoreFrame.Validate( const ARollInfo: TRollInfo );
+var
+  total: Integer;
+begin
+  total := ( RollTotal + ARollInfo.Pins );
+  //only 10 pins permitted per roll
+  if ( ARollInfo.Pins > FGameConfig.MaxPinCountPerRoll ) then
+    raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
+  //non-last frame
+  if ( FrameNo < FGameConfig.MaxFrameCount )
+    and ( total > FGameConfig.MaxPinCountPerRoll ) then
+      raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
+  //last frame
+  if ( FrameNo = FGameConfig.MaxFrameCount ) then
+  begin
+    //normal status case - two rolls total should be less than 10 if one is less than 10
+    case Status of
+      fsNormal:
+        begin
+          if ( ( Rolls.Count = 1 ) and ( total > FGameConfig.MaxPinCountPerRoll ) ) then
+            raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
+        end;
+      fsSpare:
+        begin
+          if ( ( Rolls.Count > 1 ) and ( total > ( 2 * FGameConfig.MaxPinCountPerRoll ) ) ) then
+            raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
+        end;
+      fsStrike:
+        begin
+          if ( ( Rolls.Count >= 1 ) and ( total > ( 3 * FGameConfig.MaxPinCountPerRoll ) ) ) then
+            raise EGameInvalidValueException.CreateResFmt(@SInvalidPins, [FGameConfig.MaxPinCountPerRoll]);
+        end;
+    end;
+  end;
+end;
+
 procedure TScoreFrame.AddRollInfo( const ARollInfo: TRollInfo );
 var
   total: Integer;
 begin
+  Validate( ARollInfo );
   FFrameInfo.Rolls.Add( ARollInfo );
   Inc( FFrameInfo.RollTotal, ARollInfo.Pins );
   total := FFrameInfo.RollTotal;
@@ -178,7 +217,5 @@ begin
   FFrameInfo.FrameTotal := ATotal;
   ScoreFrameChanged;
 end;
-
-
 
 end.
